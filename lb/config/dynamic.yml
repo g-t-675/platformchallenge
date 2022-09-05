@@ -1,0 +1,47 @@
+http:
+  middlewares:
+    limit:
+      buffering:
+        maxRequestBodyBytes: 32000000 # allow large uploads, set to 32M
+        retryExpression: "IsNetworkError() && Attempts() < 2"
+    stripprefixes:
+      stripPrefix:
+        prefixes:
+          - "/auth"
+          - "/transaction"
+
+
+  routers:
+    auth-api-router:
+      rule: "Host(`platform`) && PathPrefix(`/auth/`)"
+      entryPoints:
+        - http
+      # tls: 
+      #   certResolver: letsencryptresolver
+      service: auth-api-service
+      middlewares:
+        - "stripprefixes"
+    core-api-router:
+      rule: "Host(`platform`) && PathPrefix(`/transaction/`)"
+      entryPoints:
+        - http
+      service: core-api-service
+      middlewares:
+        - "stripprefixes"
+    
+
+  services: 
+    auth-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://auth-api:5000"
+    core-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://core-api:5000"
+
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12

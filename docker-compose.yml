@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+  auth-api:
+    build: 
+      context: ./auth-api 
+      dockerfile: Dockerfile
+    image: local/auth-api_img
+    container_name: auth-api
+    environment:
+      HTTP_PORT: 5000
+      JWT_SECRET: "${JWT_SECRET:?err}"
+    networks:
+      - gr4vy-private-net
+  core-api:
+    build: 
+      context: ./core-api 
+      dockerfile: Dockerfile
+    image: local/core-api_img 
+    container_name: core-api
+    environment:
+      HTTP_PORT: 5000
+      REDIS_URL: 'redis://redis-service:6379/0'
+      JWT_SECRET: "${JWT_SECRET:?err}"
+    networks:
+      - gr4vy-private-net
+  psp-connector:
+    build: 
+      context: ./psp-connector
+      dockerfile: Dockerfile
+    image: local/psp-connector_img 
+    container_name: psp-connector
+    environment:
+      REDIS_URL: 'redis://redis-service:6379/0'
+    networks:
+      - gr4vy-private-net
+  redis-service:
+    image: redis:6.0-alpine
+    restart: always
+    container_name: redis-service
+    healthcheck:
+      test: redis-cli -h 127.0.0.1 ping | grep -q PONG
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gr4vy-private-net
+  traefik:
+    image: 'traefik:v2.4'
+    container_name: 'traefik'
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - gr4vy-private-net
+    volumes:
+      - ./lb/config/traefik.yml:/etc/traefik/traefik.yml 
+      - ./lb/config/dynamic.yml:/etc/traefik/conf/dynamic.yml
+  
+networks:
+  gr4vy-private-net:
+    driver: bridge

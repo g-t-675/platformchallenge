@@ -1,0 +1,41 @@
+log:
+  level: DEBUG # change to INFO on prod launch
+
+entryPoints:
+  http:
+    address: ":80"
+  https:
+    address: ":443"
+  metrics:
+    address: ":8082"
+
+
+accessLog: {} # we can also decide not to log access requests...
+
+providers:
+  file:
+    filename: /etc/traefik/conf/dynamic.yml
+    watch: true
+
+certificatesResolvers:
+  letsencryptresolver:
+    acme:
+      email: ssl@gr4vy.com # just an example 
+      storage: acme.json   # of how ssl generation 
+      httpChallenge:       # works with a certificate resolver
+        entryPoint: http   # within traefik 
+        
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+
+global:
+  sendAnonymousUsage: false
+  checkNewVersion: true
+
+
+api:
+  insecure: true
+  dashboard: false
+  debug: true
